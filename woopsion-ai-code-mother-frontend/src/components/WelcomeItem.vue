@@ -31,7 +31,7 @@ i {
   width: 32px;
   height: 32px;
 
-  color: var(--color-text);
+  color: #42b883;
 }
 
 h3 {
@@ -56,6 +56,7 @@ h3 {
     border-radius: 8px;
     width: 50px;
     height: 50px;
+    color: #42b883;
   }
 
   .item:before {
