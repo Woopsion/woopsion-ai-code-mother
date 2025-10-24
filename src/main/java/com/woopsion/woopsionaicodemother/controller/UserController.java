@@ -1,6 +1,11 @@
 package com.woopsion.woopsionaicodemother.controller;
 
 import com.mybatisflex.core.paginate.Page;
+import com.woopsion.woopsionaicodemother.common.BaseResponse;
+import com.woopsion.woopsionaicodemother.common.ResultUtils;
+import com.woopsion.woopsionaicodemother.exception.ErrorCode;
+import com.woopsion.woopsionaicodemother.exception.ThrowUtils;
+import com.woopsion.woopsionaicodemother.model.dto.user.UserRegisterRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +30,21 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-
+    /**
+     * 用户注册
+     *
+     * @param userRegisterRequest 用户注册请求
+     * @return 注册结果
+     */
+    @PostMapping("register")
+    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
+        ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userRegisterRequest.getUserAccount();
+        String userPassword = userRegisterRequest.getUserPassword();
+        String checkPassword = userRegisterRequest.getCheckPassword();
+        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        return ResultUtils.success(result);
+    }
     /**
      * 保存用户。
      *
