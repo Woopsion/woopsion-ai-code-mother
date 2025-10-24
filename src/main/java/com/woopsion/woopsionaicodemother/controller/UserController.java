@@ -5,7 +5,10 @@ import com.woopsion.woopsionaicodemother.common.BaseResponse;
 import com.woopsion.woopsionaicodemother.common.ResultUtils;
 import com.woopsion.woopsionaicodemother.exception.ErrorCode;
 import com.woopsion.woopsionaicodemother.exception.ThrowUtils;
+import com.woopsion.woopsionaicodemother.model.dto.user.UserLoginRequest;
 import com.woopsion.woopsionaicodemother.model.dto.user.UserRegisterRequest;
+import com.woopsion.woopsionaicodemother.model.vo.LoginUserVO;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +30,23 @@ import java.util.List;
 @RestController
 @RequestMapping("/user")
 public class UserController {
+
+    @GetMapping("/get/login")
+    public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.getLoginUserVO(loginUser));
+    }
+
+
+    @PostMapping("/login")
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userLoginRequest.getUserAccount();
+        String userPassword = userLoginRequest.getUserPassword();
+        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        return ResultUtils.success(loginUserVO);
+    }
+
 
     @Autowired
     private UserService userService;
