@@ -1,8 +1,10 @@
 package com.woopsion.woopsionaicodemother.model.dto.user;
 
 import com.woopsion.woopsionaicodemother.common.PageRequest;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
@@ -14,6 +16,8 @@ import java.io.Serializable;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserQueryRequest extends PageRequest implements Serializable {
 
     /**
