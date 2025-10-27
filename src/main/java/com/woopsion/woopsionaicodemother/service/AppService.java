@@ -18,6 +18,15 @@ import java.util.List;
 public interface AppService extends IService<App> {
 
     /**
+     * 部署应用
+     *
+     * @param appId
+     * @param loginUser
+     * @return
+     */
+    String deployApp(Long appId, User loginUser);
+
+    /**
      * 聊天生成代码
      *
      * @param appId 应用id
