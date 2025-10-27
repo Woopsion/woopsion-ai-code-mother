@@ -10,7 +10,7 @@ import lombok.Getter;
  */
 @Getter
 public enum CodeGenTypeEnum {
-    HTML("原生 HTML 模式", "user"),
+    HTML("原生 HTML 模式", "html"),
     MULTI_FILE("原生多文件模式", "multi_files");
 
     private final String text;
@@ -19,5 +19,14 @@ public enum CodeGenTypeEnum {
     CodeGenTypeEnum(String text, String value) {
         this.text = text;
         this.value = value;
+    }
+
+    public static CodeGenTypeEnum getEnumByValue(String codeGenTypeStr) {
+        for (CodeGenTypeEnum codeGenTypeEnum : CodeGenTypeEnum.values()) {
+            if (codeGenTypeEnum.getValue().equals(codeGenTypeStr)) {
+                return codeGenTypeEnum;
+            }
+        }
+        return null;
     }
 }
