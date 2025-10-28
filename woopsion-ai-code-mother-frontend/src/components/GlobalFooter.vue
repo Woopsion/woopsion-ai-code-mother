@@ -3,12 +3,12 @@
     <div class="footer-content">
       <p class="copyright">
         <a
-            href="https://github.com/Woopsion"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="author-link"
+          href="https://www.codefather.cn"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="author-link"
         >
-          autoGenerateCode by woopsion
+          ai-gen-code by woopsion
         </a>
       </p>
     </div>
@@ -36,4 +36,3 @@
   font-size: 14px;
 }
 </style>
-
