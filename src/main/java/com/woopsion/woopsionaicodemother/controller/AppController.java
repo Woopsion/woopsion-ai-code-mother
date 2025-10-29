@@ -19,6 +19,7 @@ import com.woopsion.woopsionaicodemother.exception.ThrowUtils;
 import com.woopsion.woopsionaicodemother.model.dto.app.*;
 import com.woopsion.woopsionaicodemother.model.vo.AppVO;
 import com.woopsion.woopsionaicodemother.service.AppService;
+import com.woopsion.woopsionaicodemother.service.ChatHistoryService;
 import com.woopsion.woopsionaicodemother.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +39,7 @@ import java.util.Map;
  *
  * @author <a href="https://github.com/Woopsion">woopsion</a>
  */
+@Slf4j
 @RestController
 @RequestMapping("/app")
 public class AppController {
@@ -46,6 +49,9 @@ public class AppController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    ChatHistoryService chatHistoryService;
 
     /**
      * 应用部署
@@ -66,7 +72,14 @@ public class AppController {
         return ResultUtils.success(deployUrl);
     }
 
-
+    /**
+     * SSE 流式输出代码到前端
+     *
+     * @param appId
+     * @param message
+     * @param request
+     * @return
+     */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
@@ -78,6 +91,7 @@ public class AppController {
         User loginUser = userService.getLoginUser(request);
         // 调用服务生成代码（流式）
         Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
+
         // 转换为 ServerSentEvent 格式
         return contentFlux
                 .map(chunk -> {
@@ -88,13 +102,24 @@ public class AppController {
                             .data(jsonData)
                             .build();
                 })
+                .doOnError(error -> {
+                    log.error("SSE 流式传输错误: {}", error.getMessage(), error);
+                })
+                .onErrorResume(error -> {
+                    // 发生错误时发送错误信息并结束流
+                    return Mono.just(ServerSentEvent.<String>builder()
+                            .event("error")
+                            .data("{\"error\":\"" + error.getMessage() + "\"}")
+                            .build());
+                })
                 .concatWith(Mono.just(
                         // 发送结束事件
                         ServerSentEvent.<String>builder()
                                 .event("done")
                                 .data("")
                                 .build()
-                ));
+                ))
+                .onErrorStop(); // 确保错误后停止流
     }
 
 

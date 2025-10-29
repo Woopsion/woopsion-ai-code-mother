@@ -31,7 +31,7 @@ public class AppAddRequest implements Serializable {
     /**
      * 代码生成类型（枚举）
      */
-    private String codeGenType;
+    private String codeGenType = "html";
 
     @Serial
     private static final long serialVersionUID = 1L;

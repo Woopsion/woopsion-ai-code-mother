@@ -93,24 +93,40 @@ public class AiCodeGeneratorFacade {
      * @param codeGenType 代码生成类型
      * @return 流式响应
      */
-    private Flux<String> processCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenType,Long appId) {
+    private Flux<String> processCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenType, Long appId) {
         StringBuilder codeBuilder = new StringBuilder();
-        return codeStream.doOnNext(chunk -> {
-            // 实时收集代码片段
-            codeBuilder.append(chunk);
-        }).doOnComplete(() -> {
-            // 流式返回完成后保存代码
-            try {
-                String completeCode = codeBuilder.toString();
-                // 使用执行器解析代码
-                Object parsedResult = CodeParserExecutor.executeParser(completeCode, codeGenType);
-                // 使用执行器保存代码
-                File savedDir = CodeFileSaverExecutor.executeSaver(parsedResult, codeGenType,appId);
-                log.info("保存成功，路径为：" + savedDir.getAbsolutePath());
-            } catch (Exception e) {
-                log.error("保存失败: {}", e.getMessage());
-            }
-        });
+        return codeStream
+                .doOnNext(chunk -> {
+                    // 实时收集代码片段
+                    if (chunk != null && !chunk.isEmpty()) {
+                        log.debug("收集到代码片段: {} 字符", chunk.length());
+                        codeBuilder.append(chunk);
+                    }
+                })
+                .doOnError(error -> {
+                    // 发生错误时记录日志
+                    log.error("流式处理错误: {}", error.getMessage(), error);
+                })
+                .doOnComplete(() -> {
+                    // 流式返回完成后异步保存代码，避免阻塞流式传输
+                    log.info("流式处理完成，开始保存代码，总长度: {}", codeBuilder.length());
+                    new Thread(() -> {
+                        try {
+                            if (codeBuilder.length() == 0) {
+                                log.warn("生成的代码为空，跳过保存");
+                                return;
+                            }
+                            String completeCode = codeBuilder.toString();
+                            // 使用执行器解析代码
+                            Object parsedResult = CodeParserExecutor.executeParser(completeCode, codeGenType);
+                            // 使用执行器保存代码
+                            File savedDir = CodeFileSaverExecutor.executeSaver(parsedResult, codeGenType, appId);
+                            log.info("保存成功，路径为：" + savedDir.getAbsolutePath());
+                        } catch (Exception e) {
+                            log.error("保存失败: {}", e.getMessage(), e);
+                        }
+                    }).start();
+                });
     }
 
 }

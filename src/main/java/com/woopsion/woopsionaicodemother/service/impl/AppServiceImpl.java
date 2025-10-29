@@ -16,10 +16,12 @@ import com.woopsion.woopsionaicodemother.exception.ErrorCode;
 import com.woopsion.woopsionaicodemother.exception.ThrowUtils;
 import com.woopsion.woopsionaicodemother.mapper.AppMapper;
 import com.woopsion.woopsionaicodemother.model.dto.app.AppQueryRequest;
+import com.woopsion.woopsionaicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.woopsion.woopsionaicodemother.model.enums.CodeGenTypeEnum;
 import com.woopsion.woopsionaicodemother.model.vo.AppVO;
 import com.woopsion.woopsionaicodemother.model.vo.UserVO;
 import com.woopsion.woopsionaicodemother.service.AppService;
+import com.woopsion.woopsionaicodemother.service.ChatHistoryService;
 import com.woopsion.woopsionaicodemother.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,8 +43,13 @@ import java.util.stream.Collectors;
 @Service
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
+
+    @Autowired
+    ChatHistoryService chatHistoryService;
+
     @Autowired
     UserService userService;
+
     @Autowired
     AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
@@ -111,8 +118,31 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
         }
-        // 5. 调用 AI 生成代码
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        //5 添加校验通过后的用户消息
+        chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+
+        // 6. 调用 AI 生成代码
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+
+        //7.构建拼接字符串
+        StringBuilder aiResponseBuilder = new StringBuilder();
+        return contentFlux
+                .map(content -> {
+                    aiResponseBuilder.append(content);
+                    return content ;
+                })
+                .doOnComplete(() -> {
+                    String aiFullContent = aiResponseBuilder.toString();
+                    if(!StrUtil.isBlank(aiFullContent)){
+                        chatHistoryService.addChatMessage(appId, aiFullContent,
+                                ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                    }
+                })
+                .doOnError(error ->{
+                    String errorMsg = "AI 回复失败: "+error.getMessage();
+                    chatHistoryService.addChatMessage(appId, errorMsg,
+                            ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                });
     }
 
 
