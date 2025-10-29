@@ -6,7 +6,7 @@
         <RouterLink to="/">
           <div class="header-left">
             <img class="logo" src="@/assets/logo.png" alt="Logo" />
-            <h1 class="site-title">woopsion</h1>
+            <h1 class="site-title">aiCode</h1>
           </div>
         </RouterLink>
       </a-col>
@@ -60,7 +60,7 @@ const router = useRouter()
 // 当前选中菜单
 const selectedKeys = ref<string[]>(['/'])
 // 监听路由变化，更新当前选中菜单
-router.afterEach((to) => {
+router.afterEach((to, from, next) => {
   selectedKeys.value = [to.path]
 })
 
@@ -116,7 +116,7 @@ const handleMenuClick: MenuProps['onClick'] = (e) => {
   }
 }
 
-// 用户注销
+// 退出登录
 const doLogout = async () => {
   const res = await userLogout()
   if (res.data.code === 0) {
