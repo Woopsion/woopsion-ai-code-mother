@@ -30,9 +30,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 应用 控制层。
@@ -92,8 +94,8 @@ public class AppController {
         // 调用服务生成代码（流式）
         Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
 
-        // 转换为 ServerSentEvent 格式
-        return contentFlux
+        // 转换内容流为 SSE 格式
+        Flux<ServerSentEvent<String>> dataFlux = contentFlux
                 .map(chunk -> {
                     // 将内容包装成JSON对象
                     Map<String, String> wrapper = Map.of("d", chunk);
@@ -118,7 +120,34 @@ public class AppController {
                                 .event("done")
                                 .data("")
                                 .build()
-                ))
+                ));
+
+        // 使用 AtomicBoolean 来控制心跳流的停止
+        AtomicBoolean dataComplete = new AtomicBoolean(false);
+        
+        // 转换内容流为 SSE 格式，在完成时设置标志
+        Flux<ServerSentEvent<String>> sharedDataFlux = dataFlux
+                .doOnComplete(() -> dataComplete.set(true))
+                .doOnTerminate(() -> dataComplete.set(true))
+                .share();
+        
+        // 创建心跳流，每 30 秒发送一次注释行（keep-alive）
+        // 当数据流完成时，心跳流也会停止
+        Flux<ServerSentEvent<String>> heartbeatFlux = Flux.interval(Duration.ofSeconds(30))
+                .map(tick -> ServerSentEvent.<String>builder()
+                        .comment("keep-alive") // SSE 注释行，用于保持连接不被超时
+                        .build())
+                .takeUntil(item -> dataComplete.get()); // 当数据流完成时，心跳流也停止
+
+        // 合并数据流和心跳流
+        // 使用 timeout 设置 10 分钟超时
+        return Flux.merge(sharedDataFlux, heartbeatFlux)
+                .timeout(Duration.ofMinutes(10), Mono.just(ServerSentEvent.<String>builder()
+                        .event("timeout")
+                        .data("{\"error\":\"连接超时\"}")
+                        .build()))
+                .doOnCancel(() -> log.info("SSE 连接被取消"))
+                .doOnTerminate(() -> log.info("SSE 连接已终止"))
                 .onErrorStop(); // 确保错误后停止流
     }
 
