@@ -17,6 +17,7 @@ import com.woopsion.woopsionaicodemother.exception.BusinessException;
 import com.woopsion.woopsionaicodemother.exception.ErrorCode;
 import com.woopsion.woopsionaicodemother.exception.ThrowUtils;
 import com.woopsion.woopsionaicodemother.model.dto.app.*;
+import com.woopsion.woopsionaicodemother.model.enums.CodeGenTypeEnum;
 import com.woopsion.woopsionaicodemother.model.vo.AppVO;
 import com.woopsion.woopsionaicodemother.service.AppService;
 import com.woopsion.woopsionaicodemother.service.ChatHistoryService;
@@ -166,6 +167,8 @@ public class AppController {
         App app = new App();
         BeanUtil.copyProperties(appAddRequest, app);
         app.setUserId(loginUser.getId());
+        // 暂时设置为 VUE 工程生成
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
         // 校验
         appService.validApp(app, true);
         boolean result = appService.save(app);
