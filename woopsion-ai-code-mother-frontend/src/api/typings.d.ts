@@ -1,6 +1,25 @@
 declare namespace API {
-  type AppAddRequest = {
+  type App = {
+    id?: number
+    appName?: string
+    cover?: string
     initPrompt?: string
+    codeGenType?: string
+    deployKey?: string
+    deployedTime?: string
+    priority?: number
+    userId?: number
+    editTime?: string
+    createTime?: string
+    updateTime?: string
+    isDelete?: number
+  }
+
+  type AppAddRequest = {
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: string
   }
 
   type AppAdminUpdateRequest = {
@@ -45,8 +64,14 @@ declare namespace API {
     priority?: number
     userId?: number
     createTime?: string
-    updateTime?: string
+    editTime?: string
     user?: UserVO
+  }
+
+  type BaseResponseApp = {
+    code?: number
+    data?: App
+    message?: string
   }
 
   type BaseResponseAppVO = {
@@ -79,6 +104,18 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponsePageChatHistory = {
+    code?: number
+    data?: PageChatHistory
+    message?: string
+  }
+
+  type BaseResponsePageChatHistoryVO = {
+    code?: number
+    data?: PageChatHistoryVO
+    message?: string
+  }
+
   type BaseResponsePageUserVO = {
     code?: number
     data?: PageUserVO
@@ -103,6 +140,37 @@ declare namespace API {
     message?: string
   }
 
+  type ChatHistory = {
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    createTime?: string
+    updateTime?: string
+    isDelete?: number
+  }
+
+  type ChatHistoryAdminQueryRequest = {
+    pageNum?: number
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    appId?: number
+    messageType?: string
+    message?: string
+    userId?: number
+  }
+
+  type ChatHistoryVO = {
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    createTime?: string
+  }
+
   type chatToGenCodeParams = {
     appId: number
     message: string
@@ -110,6 +178,10 @@ declare namespace API {
 
   type DeleteRequest = {
     id?: number
+  }
+
+  type getAppByIdParams = {
+    id: number
   }
 
   type getAppVOByIdByAdminParams = {
@@ -120,12 +192,22 @@ declare namespace API {
     id: number
   }
 
+  type getInfoParams = {
+    id: number
+  }
+
   type getUserByIdParams = {
     id: number
   }
 
   type getUserVOByIdParams = {
     id: number
+  }
+
+  type listAppChatHistoryParams = {
+    appId: number
+    pageSize?: number
+    lastCreateTime?: string
   }
 
   type LoginUserVO = {
@@ -148,6 +230,37 @@ declare namespace API {
     optimizeCountQuery?: boolean
   }
 
+  type PageChatHistory = {
+    records?: ChatHistory[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
+  }
+
+  type PageChatHistoryVO = {
+    records?: ChatHistoryVO[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
+  }
+
+  type pageParams = {
+    page: PageUser
+  }
+
+  type PageUser = {
+    records?: User[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
+  }
+
   type PageUserVO = {
     records?: UserVO[]
     pageNumber?: number
@@ -155,6 +268,10 @@ declare namespace API {
     totalPage?: number
     totalRow?: number
     optimizeCountQuery?: boolean
+  }
+
+  type removeParams = {
+    id: number
   }
 
   type ServerSentEventString = true
