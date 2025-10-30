@@ -190,6 +190,9 @@ public class AppController {
                 &&!UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole())){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        // 删除应用前，先删除关联的对话历史
+        chatHistoryService.deleteByAppId(id);
+        // 再删除应用
         boolean result = appService.removeById(id);
         return ResultUtils.success(result);
     }
@@ -278,6 +281,9 @@ public class AppController {
         // 判断是否存在
         App oldApp = appService.getById(id);
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
+        // 删除应用前，先删除关联的对话历史
+        chatHistoryService.deleteByAppId(id);
+        // 再删除应用
         boolean result = appService.removeById(id);
         return ResultUtils.success(result);
     }
