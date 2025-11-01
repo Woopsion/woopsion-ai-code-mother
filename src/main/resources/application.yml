@@ -9,6 +9,9 @@ spring:
     password: xxxxxx
   profiles:
     active: local
+  banner:
+    charset: UTF-8
+    location: banner.txt
 
 server:
   port: 8123
@@ -32,8 +35,8 @@ langchain4j:
       base-url: https://api.deepseek.com
       api-key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
       model-name: deepseek-chat
-      log-requests: true
-      log-responses: true
+      log-requests: false
+      log-responses: false
       max-tokens: 8192
       response-format: json_object
       max-retries: 2

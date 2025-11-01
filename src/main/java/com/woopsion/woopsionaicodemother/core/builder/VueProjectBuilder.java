@@ -1,7 +1,10 @@
 package com.woopsion.woopsionaicodemother.core.builder;
 
 import cn.hutool.core.util.RuntimeUtil;
+import com.woopsion.woopsionaicodemother.utils.VirtualThreadExecutor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -17,16 +20,30 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class VueProjectBuilder {
+
+
+    @Autowired
+    @Qualifier("ioVirtualThreadPool")
+    private VirtualThreadExecutor ioVirtualThreadPool;
+
+
     /**
      * 异步构建项目（不阻塞主流程）
+     * MDC 会自动通过虚拟线程池传递
      *
      * @param projectPath 项目路径
      */
     public void buildProjectAsync(String projectPath) {
-        // 在单独的线程中执行构建，避免阻塞主流程
-        Thread.ofVirtual().name("vue-builder-" + System.currentTimeMillis()).start(() -> {
+        // 提交任务到虚拟线程池，MDC 会自动传递
+        ioVirtualThreadPool.submit(() -> {
+            log.info("虚拟线程开始执行 Vue 项目构建任务: {}", projectPath);
             try {
-                buildProject(projectPath);
+                boolean success = buildProject(projectPath);
+                if (success) {
+                    log.info("Vue 项目异步构建成功: {}", projectPath);
+                } else {
+                    log.error("Vue 项目异步构建失败: {}", projectPath);
+                }
             } catch (Exception e) {
                 log.error("异步构建 Vue 项目时发生异常: {}", e.getMessage(), e);
             }

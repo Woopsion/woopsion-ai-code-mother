@@ -78,10 +78,10 @@ public class AppController {
     /**
      * SSE 流式输出代码到前端
      *
-     * @param appId
-     * @param message
-     * @param request
-     * @return
+     * @param appId   应用ID
+     * @param message 用户消息
+     * @param request HTTP请求
+     * @return SSE 事件流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
@@ -96,18 +96,20 @@ public class AppController {
         Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
 
         // 转换内容流为 SSE 格式
+        // 注意：这里的 map 操作是高频操作（每个字符块都会调用），不传递 MDC 以提升性能
         Flux<ServerSentEvent<String>> dataFlux = contentFlux
                 .map(chunk -> {
-                    // 将内容包装成JSON对象
+                    // 将内容包装成JSON对象（高频操作，不传递 MDC）
                     Map<String, String> wrapper = Map.of("d", chunk);
                     String jsonData = JSONUtil.toJsonStr(wrapper);
                     return ServerSentEvent.<String>builder()
                             .data(jsonData)
                             .build();
                 })
-                .doOnError(error -> {
+                // 仅在错误处理时传递 MDC，用于日志记录
+                .doOnError(com.woopsion.woopsionaicodemother.utils.ReactorMdcUtils.withMdc(error -> {
                     log.error("SSE 流式传输错误: {}", error.getMessage(), error);
-                })
+                }))
                 .onErrorResume(error -> {
                     // 发生错误时发送错误信息并结束流
                     return Mono.just(ServerSentEvent.<String>builder()
@@ -121,7 +123,9 @@ public class AppController {
                                 .event("done")
                                 .data("")
                                 .build()
-                ));
+                )).doOnComplete(com.woopsion.woopsionaicodemother.utils.ReactorMdcUtils.withMdc(() -> {
+                    log.info("SSE 应用生成任务输完成");
+                }));
 
         // 使用 AtomicBoolean 来控制心跳流的停止
         AtomicBoolean dataComplete = new AtomicBoolean(false);
@@ -142,14 +146,21 @@ public class AppController {
 
         // 合并数据流和心跳流
         // 使用 timeout 设置 10 分钟超时
+        // 在关键位置（取消、终止）使用 MDC 传递以记录日志
         return Flux.merge(sharedDataFlux, heartbeatFlux)
                 .timeout(Duration.ofMinutes(10), Mono.just(ServerSentEvent.<String>builder()
                         .event("timeout")
                         .data("{\"error\":\"连接超时\"}")
                         .build()))
-                .doOnCancel(() -> log.info("SSE 连接被取消"))
-                .doOnTerminate(() -> log.info("SSE 连接已终止"))
-                .onErrorStop(); // 确保错误后停止流
+                .doOnCancel(com.woopsion.woopsionaicodemother.utils.ReactorMdcUtils.withMdc(() -> {
+                    log.info("SSE 连接被取消");
+                }))
+                .doOnTerminate(com.woopsion.woopsionaicodemother.utils.ReactorMdcUtils.withMdc(() -> {
+                    log.info("SSE 连接已终止");
+                }))
+                .onErrorStop() // 确保错误后停止流
+                // 在 Flux 创建时捕获 MDC，传递到整个响应式链路
+                .contextWrite(com.woopsion.woopsionaicodemother.utils.ReactorMdcUtils.captureMdc());
     }
 
 

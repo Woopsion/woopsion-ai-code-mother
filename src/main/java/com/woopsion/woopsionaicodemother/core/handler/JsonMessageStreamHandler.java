@@ -17,6 +17,7 @@ import com.woopsion.woopsionaicodemother.entity.User;
 import com.woopsion.woopsionaicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.woopsion.woopsionaicodemother.model.message.*;
 import com.woopsion.woopsionaicodemother.service.ChatHistoryService;
+import com.woopsion.woopsionaicodemother.utils.ReactorMdcUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -55,22 +56,30 @@ public class JsonMessageStreamHandler {
         Set<String> seenToolIds = new HashSet<>();
         return originFlux
                 .map(chunk -> {
-                    // 解析每个 JSON 消息块
+                    // 解析每个 JSON 消息块（高频操作，不传递 MDC）
                     return handleJsonMessageChunk(chunk, chatHistoryStringBuilder, seenToolIds);
                 })
                 .filter(StrUtil::isNotEmpty) // 过滤空字串
-                .doOnComplete(() -> {
+                // 在完成时传递 MDC，用于日志记录
+                .doOnComplete(ReactorMdcUtils.withMdc(() -> {
+                    log.info("JSON 消息流处理完成，开始保存对话历史和构建项目");
                     // 流式响应完成后，添加 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
                     String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR+"/vue_project_"+ appId;
+                    log.info("开始异步构建 Vue 项目: {}", projectPath);
+                    // 虚拟线程池会自动传递 MDC
                     vueProjectBuilder.buildProjectAsync(projectPath);
-                })
-                .doOnError(error -> {
+                }))
+                // 在错误时传递 MDC，用于日志记录
+                .doOnError(ReactorMdcUtils.withMdc(error -> {
+                    log.error("JSON 消息流处理失败", error);
                     // 如果AI回复失败，也要记录错误消息
                     String errorMessage = "AI回复失败: " + error.getMessage();
                     chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-                });
+                }))
+                // 捕获 MDC 上下文，传递到整个响应式链路
+                .contextWrite(ReactorMdcUtils.captureMdc());
     }
 
     /**
