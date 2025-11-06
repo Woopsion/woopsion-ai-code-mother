@@ -4,6 +4,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.woopsion.woopsionaicodemother.entity.App;
 import com.woopsion.woopsionaicodemother.entity.User;
+import com.woopsion.woopsionaicodemother.model.dto.app.AppAddRequest;
 import com.woopsion.woopsionaicodemother.model.dto.app.AppQueryRequest;
 import com.woopsion.woopsionaicodemother.model.vo.AppVO;
 import reactor.core.publisher.Flux;
@@ -16,6 +17,13 @@ import java.util.List;
  * @author <a href="https://github.com/Woopsion">woopsion</a>
  */
 public interface AppService extends IService<App> {
+    /**
+     * 创建应用
+     *
+     * @param appAddRequest 应用添加请求
+     * @param loginUser 登录用户
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 
     /**
      * 异步生成应用截图
