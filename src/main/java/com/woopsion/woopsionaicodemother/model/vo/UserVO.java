@@ -2,6 +2,7 @@ package com.woopsion.woopsionaicodemother.model.vo;
 
 import lombok.Data;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -49,6 +50,7 @@ public   class UserVO implements Serializable {
      */
     private LocalDateTime createTime;
 
+    @Serial
     private static final long serialVersionUID = 1L;
 }
 
