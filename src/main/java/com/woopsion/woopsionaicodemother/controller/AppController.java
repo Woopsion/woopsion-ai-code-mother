@@ -71,7 +71,7 @@ public class AppController {
      * @param response 响应
      */
     @GetMapping("/download/{appId}")
-    public void downloadAppCode(@PathVariable Long appId,
+    public void   downloadAppCode(@PathVariable Long appId,
                                 HttpServletRequest request,
                                 HttpServletResponse response) {
         // 1. 基础校验

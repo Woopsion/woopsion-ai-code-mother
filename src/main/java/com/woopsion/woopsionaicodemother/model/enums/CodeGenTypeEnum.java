@@ -23,6 +23,14 @@ public enum CodeGenTypeEnum {
         this.value = value;
     }
 
+    public String getText() {
+        return text;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
     public static CodeGenTypeEnum getEnumByValue(String codeGenTypeStr) {
         for (CodeGenTypeEnum codeGenTypeEnum : CodeGenTypeEnum.values()) {
             if (codeGenTypeEnum.getValue().equals(codeGenTypeStr)) {

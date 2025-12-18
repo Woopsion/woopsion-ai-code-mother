@@ -2,7 +2,7 @@ package com.woopsion.woopsionaicodemother.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.woopsion.woopsionaicodemother.ai.tools.FileWriteTool;
+import com.woopsion.woopsionaicodemother.ai.tools.*;
 import com.woopsion.woopsionaicodemother.exception.BusinessException;
 import com.woopsion.woopsionaicodemother.exception.ErrorCode;
 import com.woopsion.woopsionaicodemother.model.enums.CodeGenTypeEnum;
@@ -47,6 +47,9 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private ChatHistoryService chatHistoryService;
 
+    @Resource
+    private ToolManager toolManager;
+
 //    /**
 //     * AI 服务实例缓存
 //     * 缓存策略：
@@ -75,7 +78,6 @@ public class AiCodeGeneratorServiceFactory {
             .build();
 
 
-
     /**
      * 构建缓存键
      */
@@ -86,33 +88,35 @@ public class AiCodeGeneratorServiceFactory {
     /**
      * 根据 appId 获取服务（带缓存）
      */
-    public AiCodeGeneratorService getAiCodeGeneratorService(long appId,CodeGenTypeEnum codeGenTypeEnum) {
+    public AiCodeGeneratorService getAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenTypeEnum) {
         String cacheKey = buildCacheKey(appId, codeGenTypeEnum);
         return serviceCache.get(cacheKey, key -> createAiCodeGeneratorService(appId, codeGenTypeEnum));
     }
-    public AiCodeGeneratorService getAiCodeGeneratorService(long appId){
-        return getAiCodeGeneratorService(appId,HTML);
+
+    public AiCodeGeneratorService getAiCodeGeneratorService(long appId) {
+        return getAiCodeGeneratorService(appId, HTML);
     }
-    /**
-     * 创建新的 AI 服务实例
-     */
-    private AiCodeGeneratorService createAiCodeGeneratorService(long appId) {
-        log.info("为 appId: {} 创建新的 AI 服务实例", appId);
-        // 根据 appId 构建独立的对话记忆
-        MessageWindowChatMemory chatMemory = MessageWindowChatMemory
-                .builder()
-                .id(appId)
-                .chatMemoryStore(redisChatMemoryStore)
-                .maxMessages(20)
-                .build();
-        // 从数据库加载历史对话到记忆中
-        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
-        return AiServices.builder(AiCodeGeneratorService.class)
-                .chatModel(chatModel)
-                .streamingChatModel(openAiStreamingChatModel)
-                .chatMemory(chatMemory)
-                .build();
-    }
+//    /**
+//     * 创建新的 AI 服务实例
+//     */
+//    private AiCodeGeneratorService createAiCodeGeneratorService(long appId) {
+//        log.info("为 appId: {} 创建新的 AI 服务实例", appId);
+//        // 根据 appId 构建独立的对话记忆
+//        MessageWindowChatMemory chatMemory = MessageWindowChatMemory
+//                .builder()
+//                .id(appId)
+//                .chatMemoryStore(redisChatMemoryStore)
+//                .maxMessages(20)
+//                .build();
+//        // 从数据库加载历史对话到记忆中
+//        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
+//        return AiServices.builder(AiCodeGeneratorService.class)
+//                .chatModel(chatModel)
+//                .streamingChatModel(openAiStreamingChatModel)
+//                .chatMemory(chatMemory)
+//                .build();
+//    }
+
     /**
      * 创建新的 AI 服务实例
      */
@@ -122,7 +126,7 @@ public class AiCodeGeneratorServiceFactory {
                 .builder()
                 .id(appId)
                 .chatMemoryStore(redisChatMemoryStore)
-                .maxMessages(20)
+                .maxMessages(100)
                 .build();
         // 从数据库加载历史对话到记忆中
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
@@ -133,10 +137,11 @@ public class AiCodeGeneratorServiceFactory {
                     .streamingChatModel(reasoningStreamingChatModel)
 //                    定义了一个函数，这个函数总是返回上面创建的 chatMemory
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     ))
+                    .maxSequentialToolsInvocations(20)
                     .build();
             // HTML 和多文件生成使用默认模型
             case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)

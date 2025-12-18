@@ -28,6 +28,8 @@
     </scm>
     <properties>
         <java.version>21</java.version>
+        <selenium.version>4.16.0</selenium.version>
+        <webdrivermanager.version>5.6.0</webdrivermanager.version>
     </properties>
     <dependencies>
         <dependency>
@@ -49,6 +51,8 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.32</version>  <!-- ✅ 必须指定版本号 -->
+            <scope>provided</scope>      <!-- ✅ 推荐使用 provided -->
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -98,7 +102,7 @@
             <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>
             <version>1.8.0-beta15</version>
         </dependency>
-<!--        flux-->
+        <!--        flux-->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-reactor</artifactId>
@@ -152,15 +156,19 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
                 <configuration>
-                    <excludes>
-                        <exclude>
+                    <source>17</source>
+                    <target>17</target>
+                    <annotationProcessorPaths>
+                        <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
+                            <version>1.18.32</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>

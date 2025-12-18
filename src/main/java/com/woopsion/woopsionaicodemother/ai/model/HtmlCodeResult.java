@@ -18,5 +18,21 @@ public class HtmlCodeResult {
 
     @Description("生成代码的描述")
     private String description;
+
+    public String getHtmlCode() {
+        return htmlCode;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setHtmlCode(String htmlCode) {
+        this.htmlCode = htmlCode;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }
 
